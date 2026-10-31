@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Android Network ADB · Agentes</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main class="app">
+<header><div><small>NODE.JS · TYPESCRIPT · AGENTES NA LAN</small><h1>Android Network <b>Agentes</b></h1><p>Conexão box → PC sem ADB, root ou portas abertas na box.</p></div><div class="header-actions"><a href="/discovery" class="btn-outline">◎ Descoberta</a><a href="/commands.html" class="btn-outline">☰ Comandos</a><a href="/settings.html" class="btn-outline">⚙ Configurações</a><button id="refresh">↻ Atualizar</button></div></header>
+
+<div class="notice"><b>Como funciona</b><span>A box abre a página <code>/agent</code> no navegador, informa o token e se registra neste servidor. O vínculo é de dentro para fora: a box inicia a conexão, então não é preciso ADB nem liberar portas nela.</span></div>
+
+<article class="panel agents-panel">
+  <div class="heading">
+    <div><h2>Agentes conectados</h2><p>Boxes que abriram a página <code>/agent</code> e se registraram neste servidor.</p></div>
+    <span id="agent-count">0</span>
+  </div>
+  <div class="agent-connect">
+    <div><b>Página do agente</b> <code id="agent-url">—</code> <button id="copy-link" class="btn-secondary" type="button">Copiar link</button></div>
+    <div><b>Token</b> <code id="agent-token">—</code> <button id="copy-token" class="btn-secondary" type="button">Copiar token</button></div>
+    <div class="agent-hint" id="agent-hint">Abra a URL no navegador da box, informe o token e mantenha a página aberta. O token só aparece quando o painel é aberto em http://localhost:3000.</div>
+  </div>
+  <div id="agents" class="agents"><div class="empty">Nenhum agente conectado ainda.</div></div>
+  <div id="agent-status" class="status">Aguardando agentes…</div>
+</article>
+
+<article class="panel caps-panel">
+  <div class="heading">
+    <div><h2>O que você pode fazer com agentes</h2><p>Recursos do modo agente. A referência completa de comandos e endpoints fica em <a href="/commands.html">Comandos</a>.</p></div>
+    <span class="tag">/api/capabilities</span>
+  </div>
+  <div id="capabilities" class="caps"><div class="empty">Carregando capacidades…</div></div>
+</article>
+
+<article class="panel logs-panel">
+  <div class="heading">
+    <div><h2>Atividade do servidor</h2><p>Registros de agentes e descoberta em tempo real.</p></div>
+    <div class="logs-actions">
+      <span id="log-count" class="tag tag-dim">0 entradas</span>
+      <button id="clear-logs" class="btn-secondary">Limpar</button>
+    </div>
+  </div>
+  <div id="logs" class="logs-output"></div>
+</article>
+
+<footer>Servidor local · LAN habilitada para agentes (token obrigatório)</footer>
+</main><script src="/js/common.js"></script><script src="/js/capabilities.js"></script><script src="/js/agents.js"></script></body></html>

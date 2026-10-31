@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agente TV Box · Android Network ADB</title>
+<style>
+  :root{color-scheme:dark;--bg:#0b0e13;--panel:#121720;--border:#293241;--text:#edf2f8;--muted:#8e9bad;--green:#65d6a5;--blue:#8cb8ff;--amber:#f1ca79;--red:#ff9c9c}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top left,#162235 0,var(--bg) 55%);color:var(--text);font:20px/1.5 system-ui,Segoe UI,sans-serif}
+  .wrap{width:min(1100px,calc(100% - 48px));margin:auto;padding:40px 0}
+  header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:28px;flex-wrap:wrap}
+  small{color:var(--green);font-weight:800;letter-spacing:.16em;font-size:14px}
+  h1{font-size:clamp(30px,4vw,46px);letter-spacing:-.04em;margin:6px 0}
+  h1 b{color:var(--green)}
+  p{margin:0;color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:999px;padding:10px 18px;font-size:17px;font-weight:700;color:var(--muted);background:#0d1118}
+  .dot{width:12px;height:12px;border-radius:50%;background:#55637a;flex-shrink:0}
+  .pill.on{color:var(--green);border-color:#2a4a38;background:#10201a}
+  .pill.on .dot{background:var(--green);box-shadow:0 0 12px var(--green)}
+  .pill.err{color:var(--red);border-color:#4a3034;background:#221518}
+  .pill.err .dot{background:var(--red)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px 26px;margin-bottom:20px}
+  .card h2{font-size:18px;margin:0 0 6px;letter-spacing:.02em}
+  .card h2 span{color:var(--blue)}
+  .card p.hint{font-size:15px;margin-bottom:18px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  input{min-width:0;flex:1;background:#0d1118;border:1px solid var(--border);border-radius:10px;padding:15px 16px;color:var(--text);font:18px Consolas,monospace;outline:none}
+  input:focus{border-color:#3d5a7a}
+  button{cursor:pointer;border:1px solid #365646;background:var(--green);color:#07150f;border-radius:10px;padding:15px 24px;font-size:17px;font-weight:800}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{background:transparent;border-color:var(--border);color:var(--muted)}
+  button.ghost:hover{border-color:#8e9bad;color:var(--text)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .field{background:#0d1118;border:1px solid var(--border);border-radius:10px;padding:13px 15px;min-width:0}
+  .field .k{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+  .field .v{font-size:18px;font-weight:650;overflow-wrap:anywhere}
+  .field .v.dim{color:var(--muted);font-weight:400}
+  .ua{font:14px/1.6 Consolas,monospace;color:var(--muted);overflow-wrap:anywhere;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+  pre{margin:10px 0 0;background:#0d1118;border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:#b7d2ff;font:15px/1.6 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
+  .log{font:14px/1.7 Consolas,monospace;color:var(--muted);max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+  .log .t{color:#3d5068;margin-right:8px}
+  .log .ok{color:var(--green)}
+  .log .err{color:var(--red)}
+  footer{text-align:center;color:#657286;font-size:13px;padding:10px 0 30px}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <small>ANDROID NETWORK ADB · AGENTE</small>
+      <h1>TV Box <b>conectada</b></h1>
+      <p>Esta página registra a box no painel do PC e envia informações do aparelho.</p>
+    </div>
+    <span id="status" class="pill"><span class="dot"></span><span id="status-text">Desconectado</span></span>
+  </header>
+
+  <section id="gate" class="card">
+    <h2>Conectar ao servidor <span>local</span></h2>
+    <p class="hint">Digite o token exibido no painel do PC (arquivo <code>agent-token.txt</code>).</p>
+    <form id="gate-form" class="row">
+      <input id="token" autocomplete="off" spellcheck="false" placeholder="token do agente" aria-label="Token do agente">
+      <button id="connect-btn" type="submit">Conectar</button>
+    </form>
+  </section>
+
+  <section id="panel" class="card" hidden>
+    <h2>Aparelho <span id="device-title">—</span></h2>
+    <div class="grid">
+      <div class="field"><div class="k">Modelo</div><div class="v" id="f-model">—</div></div>
+      <div class="field"><div class="k">Android</div><div class="v" id="f-android">—</div></div>
+      <div class="field"><div class="k">Plataforma</div><div class="v dim" id="f-platform">—</div></div>
+      <div class="field"><div class="k">Tela</div><div class="v dim" id="f-screen">—</div></div>
+      <div class="field"><div class="k">Idioma</div><div class="v dim" id="f-language">—</div></div>
+      <div class="field"><div class="k">Agente</div><div class="v dim" id="f-id">—</div></div>
+    </div>
+    <div class="ua" id="f-ua">—</div>
+    <div class="actions">
+      <button id="info-btn" class="ghost" type="button">Enviar informações agora</button>
+      <button id="disconnect-btn" class="ghost" type="button">Desconectar</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Último comando</h2>
+    <p class="hint" id="cmd-empty">Nenhum comando recebido ainda.</p>
+    <pre id="cmd-output" hidden></pre>
+  </section>
+
+  <section class="card">
+    <h2>Atividade</h2>
+    <div id="log" class="log"><div class="placeholder"><span class="t">—</span>Aguardando conexão…</div></div>
+  </section>
+
+  <footer>Mantenha esta página aberta · envio a cada 5 segundos · não concede ADB nem root</footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const HEARTBEAT_MS = 5000;
+  const APP_VERSION = "0.6.0";
+  const STORE_TOKEN = "adbAgentToken";
+  const STORE_ID = "adbAgentId";
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const statusText = $("status-text");
+  const gate = $("gate");
+  const panel = $("panel");
+  const tokenInput = $("token");
+  const connectBtn = $("connect-btn");
+  const cmdEmpty = $("cmd-empty");
+  const cmdOutput = $("cmd-output");
+  const logEl = $("log");
+
+  let token = "";
+  let agentId = "";
+  let timer = null;
+  let sending = false;
+  let failures = 0;
+  let heartbeatOk = false;
+
+  function now() {
+    return new Date().toLocaleTimeString("pt-BR");
+  }
+
+  function addLog(msg, cls) {
+    const placeholder = logEl.querySelector(".placeholder");
+    if (placeholder) placeholder.remove();
+    const row = document.createElement("div");
+    const ts = document.createElement("span");
+    ts.className = "t";
+    ts.textContent = now();
+    const body = document.createElement("span");
+    if (cls) body.className = cls;
+    body.textContent = msg;
+    row.append(ts, body);
+    logEl.append(row);
+    while (logEl.childElementCount > 120) logEl.firstElementChild.remove();
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setStatus(state, text) {
+    statusEl.className = "pill" + (state === "on" ? " on" : state === "err" ? " err" : "");
+    statusText.textContent = text;
+  }
+
+  function setText(id, value, fallback) {
+    const el = $(id);
+    el.textContent = value || fallback || "—";
+    el.classList.toggle("dim", !value);
+  }
+
+  function parseUA(ua) {
+    const android = ua.match(/Android\s+([\d.]+)/i);
+    let model = "";
+    const m = ua.match(/Android\s+[\d.]+;\s*([^;)]+?)(?:\s+Build\/[^;)]*)?(?:[;)]|$)/i);
+    if (m) model = m[1].trim();
+    if (/^wv$/i.test(model) || /^K$/i.test(model)) model = "";
+    const platform = ua.match(/\(([^)]*)\)/);
+    return {
+      android: android ? android[1] : "",
+      model,
+      platform: platform ? platform[1] : "",
+    };
+  }
+
+  function deviceInfo() {
+    const ua = navigator.userAgent || "";
+    const parsed = parseUA(ua);
+    return {
+      name: parsed.model || "TV Box",
+      model: parsed.model,
+      android: parsed.android,
+      platform: parsed.platform,
+      userAgent: ua,
+      screen: `${screen.width}x${screen.height}`,
+      language: navigator.language || "",
+      appVersion: APP_VERSION,
+    };
+  }
+
+  function newId() {
+    return "ag-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+  }
+
+  function fillFields(info) {
+    setText("f-model", info.model);
+    setText("f-android", info.android ? "Android " + info.android : "");
+    setText("f-platform", info.platform);
+    setText("f-screen", info.screen);
+    setText("f-language", info.language);
+    setText("f-id", agentId);
+    $("f-ua").textContent = info.userAgent || "—";
+    $("device-title").textContent = info.model || "TV Box";
+  }
+
+  async function call(path, payload) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-agent-token": token },
+      body: JSON.stringify(Object.assign({ id: agentId, token }, payload)),
+    });
+    let data = null;
+    try { data = await res.json(); } catch { /* resposta sem JSON */ }
+    if (!res.ok) {
+      const msg = (data && data.error) || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return data || {};
+  }
+
+  async function register() {
+    const info = deviceInfo();
+    const data = await call("/api/agent/register", info);
+    if (data.id) {
+      agentId = data.id;
+      localStorage.setItem(STORE_ID, agentId);
+    }
+    fillFields(info);
+    return info;
+  }
+
+  async function sendInfoResult() {
+    const info = deviceInfo();
+    const output = [
+      "Modelo   : " + (info.model || "desconhecido"),
+      "Android  : " + (info.android || "desconhecido"),
+      "Tela     : " + info.screen,
+      "Idioma   : " + info.language,
+      "Agente   : " + APP_VERSION + " (" + agentId + ")",
+      "UserAgent: " + info.userAgent,
+    ].join("\n");
+    await call("/api/agent/result", { command: "info", output });
+    showResult("info", output);
+  }
+
+  function webglInfo() {
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl");
+      if (!gl) return "sem WebGL";
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      const renderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      const vendor = ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
+      return `${vendor} / ${renderer}`;
+    } catch (e) {
+      return "indisponível";
+    }
+  }
+
+  function sendEnvResult() {
+    const uaData = navigator.userAgentData;
+    const conn = navigator.connection || {};
+    const output = [
+      "Platform : " + (navigator.platform || "?"),
+      "UA-CH    : " + (uaData ? `${uaData.platform}${uaData.mobile ? " (mobile)" : ""}` : "não suportado"),
+      "Núcleos  : " + (navigator.hardwareConcurrency || "?"),
+      "Memória  : " + (navigator.deviceMemory ? navigator.deviceMemory + " GB (aprox.)" : "não exposta"),
+      "Toque    : " + (navigator.maxTouchPoints || 0) + " ponto(s)",
+      "Pixel    : " + (window.devicePixelRatio || 1) + "x",
+      "WebGL    : " + webglInfo(),
+      "Rede     : " + (conn.effectiveType || "?") + (conn.downlink ? ` · ${conn.downlink} Mbps` : ""),
+      "Online   : " + (navigator.onLine ? "sim" : "não"),
+      "Fuso     : " + (Intl.DateTimeFormat().resolvedOptions().timeZone || "?"),
+      "Agente   : " + APP_VERSION + " (" + agentId + ")",
+    ].join("\n");
+    return call("/api/agent/result", { command: "env", output }).then(() => showResult("env", output));
+  }
+
+  function showResult(command, output) {
+    cmdEmpty.hidden = true;
+    cmdOutput.hidden = false;
+    cmdOutput.textContent = `> ${command}\n${output}`;
+  }
+
+  function handleCommand(cmd) {
+    if (/^info$/i.test(cmd)) {
+      addLog("Comando recebido: info", "ok");
+      sendInfoResult().catch((e) => addLog("Falha ao responder info: " + e.message, "err"));
+      return;
+    }
+    if (/^env$/i.test(cmd)) {
+      addLog("Comando recebido: env", "ok");
+      sendEnvResult().catch((e) => addLog("Falha ao responder env: " + e.message, "err"));
+      return;
+    }
+    const m = cmd.match(/^open\s+(https?:\/\/\S+)$/i);
+    if (m) {
+      const url = m[1];
+      addLog("Comando recebido: open " + url, "ok");
+      try {
+        const win = window.open(url, "_blank", "noopener");
+        if (win) {
+          call("/api/agent/result", { command: cmd, output: "URL aberta em nova aba." }).catch(() => {});
+          showResult(cmd, "URL aberta em nova aba.");
+        } else {
+          // popup bloqueado: nunca navegar para fora do /agent (mataria o agente)
+          addLog("Popup bloqueado. Use o link exibido abaixo.", "warn");
+          showResult(cmd, "Popup bloqueado pelo navegador. Toque no link para abrir:");
+          const a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.textContent = url;
+          a.style.color = "#60a5fa";
+          a.style.display = "block";
+          a.style.marginTop = "8px";
+          cmdOutput.append(a);
+          call("/api/agent/result", { command: cmd, output: "Popup bloqueado; link exibido no agente." }).catch(() => {});
+        }
+      } catch (e) {
+        call("/api/agent/result", { command: cmd, output: "Falha ao abrir: " + e.message }).catch(() => {});
+      }
+    }
+  }
+
+  async function heartbeat() {
+    if (sending || !token) return;
+    sending = true;
+    try {
+      const info = deviceInfo();
+      const data = await call("/api/agent/heartbeat", info);
+      if (data.id) agentId = data.id;
+      fillFields(info);
+      if (!heartbeatOk) {
+        heartbeatOk = true;
+        setStatus("on", "Conectado");
+        addLog("Servidor respondendo. Enviando a cada 5s.", "ok");
+      }
+      failures = 0;
+      for (const cmd of data.commands || []) handleCommand(String(cmd));
+    } catch (e) {
+      failures += 1;
+      heartbeatOk = false;
+      setStatus("err", failures > 2 ? "Sem conexão" : "Reconectando…");
+      if (failures === 1) addLog("Erro: " + e.message, "err");
+    } finally {
+      sending = false;
+    }
+  }
+
+  function startLoop() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(heartbeat, HEARTBEAT_MS);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) heartbeat();
+    });
+  }
+
+  async function connect(rawToken) {
+    const t = String(rawToken || "").trim();
+    if (!t) {
+      addLog("Informe o token do painel.", "err");
+      tokenInput.focus();
+      return;
+    }
+    token = t;
+    agentId = localStorage.getItem(STORE_ID) || newId();
+    connectBtn.disabled = true;
+    setStatus("", "Conectando…");
+    try {
+      await register();
+      localStorage.setItem(STORE_TOKEN, token);
+      gate.hidden = true;
+      panel.hidden = false;
+      setStatus("on", "Conectado");
+      addLog("Agente registrado: " + agentId, "ok");
+      await heartbeat();
+      startLoop();
+    } catch (e) {
+      setStatus("err", "Falha ao conectar");
+      addLog("Falha: " + e.message + " (token correto? servidor ligado?)", "err");
+      token = "";
+      tokenInput.value = t;
+      tokenInput.focus();
+    } finally {
+      connectBtn.disabled = false;
+    }
+  }
+
+  function disconnect() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    token = "";
+    localStorage.removeItem(STORE_TOKEN);
+    gate.hidden = false;
+    panel.hidden = true;
+    setStatus("", "Desconectado");
+    tokenInput.value = "";
+    addLog("Desconectado deste servidor.");
+  }
+
+  $("gate-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    connect(tokenInput.value);
+  });
+  $("info-btn").addEventListener("click", () => {
+    sendInfoResult().catch((e) => addLog("Falha ao enviar: " + e.message, "err"));
+  });
+  $("disconnect-btn").addEventListener("click", disconnect);
+
+  const fromQuery = new URLSearchParams(location.search).get("token");
+  const saved = localStorage.getItem(STORE_TOKEN);
+  const initialToken = fromQuery || saved || "";
+  tokenInput.value = initialToken;
+  if (fromQuery) history.replaceState(null, "", location.pathname);
+  if (initialToken) connect(initialToken);
+  else tokenInput.focus();
+})();
+</script>
+</body>
+</html>

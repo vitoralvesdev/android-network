@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Android Network ADB · Descoberta</title><link rel="stylesheet" href="/styles.css"></head>
+<body><main class="app">
+<header><div><small>NODE.JS · TYPESCRIPT · DESCOBERTA</small><h1>Descoberta <b>&amp; ADB</b></h1><p>Ferramentas auxiliares: localizar aparelhos na rede e, se possível, falar ADB.</p></div><div class="header-actions"><a href="/" class="btn-outline">◉ Agentes</a><a href="/commands.html" class="btn-outline">☰ Comandos</a><a href="/settings.html" class="btn-outline">⚙ Configurações</a><button id="refresh">↻ Refresh</button></div></header>
+
+<div class="notice"><b>Modo auxiliar</b><span>O agente é o caminho principal. A descoberta serve para encontrar a box e identificar o tipo; o ADB só funciona se a box expuser a depuração e autorizar a conexão.</span></div>
+
+<section class="layout">
+
+<article class="panel">
+  <div class="heading">
+    <div><h2>Dispositivos encontrados</h2><p>Clique em um dispositivo para preencher o comando.</p></div>
+    <span id="count">0</span>
+  </div>
+  <div class="scan-progress">
+    <div class="scan-bar-track"><div id="scan-bar" class="scan-bar-fill"></div></div>
+    <span id="scan-label" class="scan-label"></span>
+    <span id="scan-pct" class="scan-pct"></span>
+  </div>
+  <div id="devices" class="devices"><div class="empty">Procurando dispositivos…</div></div>
+  <div id="status" class="status">Aguardando varredura</div>
+</article>
+
+<article class="panel">
+  <div class="heading">
+    <div><h2>Terminal</h2><p>ADB e agente na mesma linha: <code>list</code> · <code>connect</code> · <code>agent info</code> · <code>agent apps</code> · <code>agent launch</code></p></div>
+    <span class="tag">LOCAL</span>
+  </div>
+  <div id="output" class="output">
+    <div class="muted">Android Network ADB v0.6.0 · terminal ADB + agente</div>
+    <div class="muted">ADB: <code>list &lt;ip-ou-nome&gt;</code> para identificar um aparelho.</div>
+    <div class="muted">Agente: <code>agent config &lt;ip:porta&gt; &lt;token&gt;</code> e depois <code>agent info</code>, <code>agent apps</code>, <code>agent launch &lt;pacote&gt;</code>.</div>
+  </div>
+  <form id="form">
+    <span>&gt;</span>
+    <input id="command" autocomplete="off" placeholder="agent info · list 192.168.1.50">
+    <span id="abort-hint" style="display:none;color:#f1ca79;font-size:11px;white-space:nowrap">abort para cancelar</span>
+    <button id="exec-btn" type="submit">Executar</button>
+  </form>
+</article>
+
+</section>
+
+<article class="panel ops-panel">
+  <div class="heading">
+    <div><h2>Apps e arquivos</h2><p>Instalar, remover, capturar a tela e reiniciar a box via ADB.</p></div>
+    <span class="tag">ADB</span>
+  </div>
+  <div class="ops">
+    <div class="ops-row">
+      <label for="ops-target">Alvo</label>
+      <input id="ops-target" placeholder="192.168.1.12 ou serial USB" autocomplete="off">
+      <span class="ops-hint">clique em um dispositivo acima para preencher</span>
+    </div>
+    <div class="ops-row">
+      <button class="btn-secondary" id="ops-apps" type="button">Listar apps</button>
+      <button class="btn-secondary" id="ops-screen" type="button">Capturar tela</button>
+      <button class="btn-secondary" id="ops-reboot" type="button">Reiniciar</button>
+    </div>
+    <div class="ops-row">
+      <input id="ops-package" placeholder="com.exemplo.app" autocomplete="off">
+      <button class="btn-secondary" id="ops-uninstall" type="button">Remover app</button>
+    </div>
+    <div class="ops-row">
+      <input type="file" id="ops-file" accept=".apk,application/vnd.android.package-archive">
+      <button class="btn-secondary" id="ops-install" type="button">Instalar APK</button>
+      <button class="btn-secondary" id="ops-push" type="button">Enviar arquivo</button>
+    </div>
+    <div id="ops-status" class="status">Esses comandos precisam de ADB habilitado e autorizado na box.</div>
+    <div id="screen-preview" class="screen-preview" hidden></div>
+  </div>
+</article>
+
+<article class="panel logs-panel">
+  <div class="heading">
+    <div><h2>Logs de descoberta</h2><p>Atividade do servidor em tempo real.</p></div>
+    <div class="logs-actions">
+      <span id="log-count" class="tag tag-dim">0 entradas</span>
+      <button id="clear-logs" class="btn-secondary">Limpar</button>
+    </div>
+  </div>
+  <div id="logs" class="logs-output"></div>
+</article>
+
+<footer>Servidor local · LAN habilitada para agentes (token obrigatório)</footer>
+</main><script src="/js/common.js"></script><script src="/js/discovery.js"></script></body></html>

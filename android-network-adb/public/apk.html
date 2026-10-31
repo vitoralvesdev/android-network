@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Instalar HIGHSKY Agent (APK)</title>
+<style>
+  :root{--bg:#0f1419;--panel:#161c24;--line:#273140;--text:#e6edf5;--muted:#8a96a8;--green:#4ade80;--blue:#60a5fa;--amber:#fbbf24}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:760px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:26px;margin:0 0 6px}
+  p.sub{color:var(--muted);margin:0 0 26px}
+  .btn{display:inline-block;background:#1a3a2a;border:1px solid #2f6b47;color:var(--green);text-decoration:none;
+       padding:16px 26px;border-radius:10px;font-weight:700;font-size:18px}
+  .btn:focus,.btn:hover{outline:2px solid var(--green);outline-offset:2px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:22px 0}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px}
+  ol{margin:0;padding-left:22px}
+  li{margin:8px 0}
+  code{background:#0b0f14;border:1px solid var(--line);border-radius:5px;padding:2px 6px;font-size:13px}
+  .warn{border-color:#5a4720;background:#221c10;color:#fde68a}
+  .hash{font-size:12px;color:var(--muted);word-break:break-all;margin-top:10px}
+  .done{color:var(--green)}
+</style>
+</head>
+<body>
+<main>
+  <h1>HIGHSKY Agent</h1>
+  <p class="sub">APK nativo para a TV Box — servidor HTTP local com token, sem ADB.</p>
+
+  <a class="btn" href="/tx-agent.apk" download>⤓ Baixar APK (25 KB)</a>
+  <div class="hash">sha256: b18ffcacbe30b0cace7e6937823bc510bde7b57e75c2bd5be4b5c8e048151f7f</div>
+
+  <div class="panel">
+    <h2>Passos na TV</h2>
+    <ol>
+      <li>Clique em <b>Baixar APK</b> acima (ou abra <code>http://192.168.1.6:3000/tx-agent.apk</code>).</li>
+      <li>Abra o arquivo baixado. Se a TV pedir, permita <b>instalar apps desconhecidos</b> para o navegador.</li>
+      <li>Se o app já está instalado, instalar este APK <b>atualiza</b> e mantém o token.</li>
+      <li>Instale e abra o <b>HIGHSKY Agent</b>.</li>
+      <li>Anote o <b>IP, porta 8790 e token</b> mostrados na tela (também indica se a instalação de APK está permitida ou bloqueada).</li>
+      <li>Mantenha o app aberto (ele roda em primeiro plano e reinicia sozinho).</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <h2>O que o agente nativo faz</h2>
+    <ol>
+      <li><code>GET /info</code> — modelo, Android, tela, <b>canInstall</b>, telas de Settings e instaladores disponíveis</li>
+      <li><code>GET /apps</code> — apps de usuário e de sistema</li>
+      <li><code>GET /launch?pkg=...</code> — abre um app</li>
+      <li><code>GET /open?url=...</code> — abre um site</li>
+      <li><code>GET /install?url=...</code> — baixa o APK e abre o instalador do sistema na TV (modo <code>view</code>); <code>&amp;mode=session</code> usa o PackageInstaller</li>
+      <li><code>GET /uninstall?pkg=...</code> — pede a desinstalação na TV</li>
+      <li><code>GET /settings?what=unknown|security|applications|main</code> — abre a tela de configurações correspondente</li>
+      <li><code>GET /result</code> — resultado da última instalação/desinstalação</li>
+    </ol>
+    <p>Todos exigem o header <code>x-agent-token</code> (ou <code>?token=</code>). Só <code>/health</code> é aberto.</p>
+  </div>
+
+  <div class="panel warn">
+    <h2>Atenção</h2>
+    <p>APK não troca a versão do Android. “Android TV 11” exige firmware específico da placa e gravação por USB/SD — não é possível pelo agente.
+    Este APK dá controle real da box no Android atual, sem cabo e sem ADB.</p>
+  </div>
+
+  <p class="sub">No PC, teste depois de instalar:<br>
+  <code>curl -H "x-agent-token: &lt;token&gt;" http://&lt;ip-da-box&gt;:8790/info</code></p>
+</main>
+</body>
+</html>

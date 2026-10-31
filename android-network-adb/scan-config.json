@@ -1,0 +1,21 @@
+{
+  "knownHostsFirst": true,
+  "stepAdbDevices": true,
+  "stepAdbMdns": true,
+  "stepSsdp": true,
+  "stepMdns": true,
+  "stepArpScan": true,
+  "stepFullSweep": true,
+  "timeoutKnown": 1500,
+  "timeoutArp": 1000,
+  "timeoutSweep": 500,
+  "scanWorkers": 60,
+  "autoRescanMinutes": 10,
+  "keepAliveEnabled": true,
+  "keepAliveIntervalSec": 60,
+  "wakeOnLan": true,
+  "enrichAirPlay": true,
+  "enrichCast": true,
+  "includeArpOnly": true,
+  "adbAutoConnect": true
+}

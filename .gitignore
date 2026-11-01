@@ -1,1 +1,3 @@
 node_modules/\ndist/\n
+known-hosts\n*.log\n*.env\n*.DS_Store\ncoverage/\n
+captures

@@ -10,6 +10,18 @@ O projeto já oferece integração com **Android Debug Bridge (ADB)** para taref
 
 A proposta é evoluir para uma plataforma de manutenção mais completa: além do ADB, o projeto está recebendo novos modos de conexão e gerenciamento, incluindo um **Agent Mode com recursos inteligentes e futura integração com IA**, para permitir interações mais naturais com o aparelho.
 
+## Prévia da interface
+
+Abaixo estão algumas capturas reais do painel, mostrando a descoberta de dispositivos, o terminal integrado e as ferramentas de manutenção por ADB. Os endereços IP locais foram ocultados nas imagens.
+
+<p align="center">
+  <img src="docs/images/discovery-adb.png" alt="Painel de descoberta de dispositivos e terminal ADB" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/images/apps-arquivos-logs.png" alt="Área de aplicativos, arquivos e logs de descoberta" width="100%">
+</p>
+
 > **Status do projeto:** em desenvolvimento ativo. O modo ADB já possui funcionalidades operacionais. Os recursos relacionados aos agentes — incluindo o Agent Mode inteligente e a experiência de interação com IA — são experimentais e ainda estão em desenvolvimento.
 
 ---
@@ -114,7 +126,6 @@ Antes de começar, tenha instalado:
 
 - **Node.js 20 ou superior**
 - **npm**, normalmente instalado junto com o Node.js
-- **Git**, caso vá clonar o repositório
 
 Para utilizar o módulo ADB:
 

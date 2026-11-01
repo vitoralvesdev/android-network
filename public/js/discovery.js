@@ -18,6 +18,31 @@
   let groups = [];
   let cmdRunning = false;
   let lastScanStatus = "";
+  const commandHistory = [];
+  let historyIndex = 0;
+  let historyDraft = "";
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!commandHistory.length) return;
+      if (historyIndex === commandHistory.length) historyDraft = input.value;
+      historyIndex = Math.max(0, historyIndex - 1);
+      input.value = commandHistory[historyIndex];
+    } else if (event.key === "ArrowDown" && historyIndex < commandHistory.length) {
+      event.preventDefault();
+      historyIndex += 1;
+      input.value =
+        historyIndex === commandHistory.length ? historyDraft : commandHistory[historyIndex];
+    }
+  });
+
+  input.addEventListener("input", () => {
+    if (historyIndex < commandHistory.length) {
+      historyIndex = commandHistory.length;
+      historyDraft = input.value;
+    }
+  });
 
   function terminal(text, cls = "") {
     const d = document.createElement("div");
@@ -236,6 +261,10 @@
     e.preventDefault();
     const command = input.value.trim();
     if (!command) return;
+
+    commandHistory.push(command);
+    historyIndex = commandHistory.length;
+    historyDraft = "";
 
     if (/^abort$/i.test(command)) {
       terminal("> abort");

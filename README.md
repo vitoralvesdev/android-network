@@ -1,176 +1,584 @@
-# Android Network ADB
+# Android Network
 
-Painel local em Node.js + TypeScript para acompanhar TV Boxes Android na LAN.
-O caminho principal é o **agente**: a box abre uma página no navegador, conecta de dentro para fora
-e aparece no painel sem ADB, root ou portas abertas. A descoberta de rede e o ADB continuam
-disponíveis como ferramentas auxiliares.
+<p align="center">
+  **Gerenciamento e manutenção de dispositivos Android TV pela rede local.**
+</p>
+
+O **Android Network** é uma ferramenta desenvolvida em Node.js e TypeScript para localizar, conectar e realizar operações de manutenção em Android TVs e TV Boxes pela rede.
+
+O projeto já oferece integração com **Android Debug Bridge (ADB)** para tarefas como listar aplicativos, instalar e remover APKs, capturar a tela, transferir arquivos e reiniciar dispositivos.
+
+A proposta é evoluir para uma plataforma de manutenção mais completa: além do ADB, o projeto está recebendo novos modos de conexão e gerenciamento, incluindo um **Agent Mode com recursos inteligentes e futura integração com IA**, para permitir interações mais naturais com o aparelho.
+
+> **Status do projeto:** em desenvolvimento ativo. O modo ADB já possui funcionalidades operacionais. Os recursos relacionados aos agentes — incluindo o Agent Mode inteligente e a experiência de interação com IA — são experimentais e ainda estão em desenvolvimento.
+
+---
+
+## Índice
+
+- [Visão geral](#visão-geral)
+- [Funcionalidades](#funcionalidades)
+- [Requisitos](#requisitos)
+- [Instalação](#instalação)
+- [Executando o projeto](#executando-o-projeto)
+- [Conectando um dispositivo com ADB](#conectando-um-dispositivo-com-adb)
+- [Comandos disponíveis no ADB](#comandos-disponíveis-no-adb)
+- [Agent Mode — em desenvolvimento](#agent-mode--em-desenvolvimento)
+- [Descoberta de dispositivos](#descoberta-de-dispositivos)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Rede e segurança](#rede-e-segurança)
+- [Limitações conhecidas](#limitações-conhecidas)
+- [Tecnologias](#tecnologias)
+- [Contribuindo](#contribuindo)
+
+---
+
+## Visão geral
+
+A ideia do Android Network é centralizar operações de manutenção de dispositivos Android TV em um painel acessível pelo computador, sem precisar executar manualmente cada tarefa no terminal.
+
+O projeto está sendo construído em módulos, para que diferentes formas de comunicação com o dispositivo possam coexistir.
+
+| Módulo             | Objetivo                                                       | Situação                                    |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------- |
+| ADB                | Executar operações de manutenção nos dispositivos              | Funcional                                   |
+| Descoberta de rede | Localizar e identificar dispositivos na LAN                    | Implementado, sujeito às limitações da rede |
+| Agent Mode         | Criar uma comunicação alternativa com o dispositivo            | Experimental / em desenvolvimento           |
+| Agent com IA       | Permitir interação inteligente e comandos em linguagem natural | Planejado / em desenvolvimento              |
+
+O ADB continua sendo uma parte importante do projeto, mas não é o destino final da ferramenta.
+
+## Funcionalidades
+
+### ADB — disponível
+
+O módulo ADB permite executar operações diretamente em dispositivos Android autorizados:
+
+- Identificar o dispositivo e consultar informações do sistema.
+- Listar aplicativos instalados, incluindo aplicativos de sistema.
+- Instalar e atualizar arquivos APK.
+- Desinstalar aplicativos.
+- Capturar a tela do dispositivo.
+- Transferir arquivos do computador para a TV Box.
+- Reiniciar o dispositivo.
+- Conectar, desconectar e parear dispositivos pela rede.
+- Manter conexões ADB conhecidas e tentar reconectá-las.
+
+### Descoberta de dispositivos — implementada
+
+O sistema reúne diferentes fontes de informação para localizar dispositivos na rede local:
+
+- Dispositivos ADB conhecidos.
+- Descoberta mDNS.
+- SSDP / UPnP.
+- Serviços relacionados a Cast, Android TV Remote e AirPlay.
+- Cache ARP e varredura TCP da sub-rede.
+- Identificação por nome, fabricante, modelo e evidências de rede.
+- Classificação de dispositivos Android TV, Android, Apple, roteadores e desconhecidos.
+- Identificação de dispositivos conectados por USB, quando disponíveis pelo ADB.
+- Wake-on-LAN para dispositivos conhecidos.
+
+A descoberta depende dos serviços que cada aparelho disponibiliza na rede. Portanto, nem todo dispositivo será identificado automaticamente.
+
+### Agent Mode — em desenvolvimento
+
+O projeto possui uma estrutura experimental de agentes para explorar formas alternativas de comunicação e gerenciamento dos dispositivos.
+
+A direção desse módulo é permitir que o computador se comunique com a TV por meio de um agente executado no próprio aparelho, reduzindo a dependência de uma conexão ADB tradicional.
+
+Entre as experiências e funcionalidades presentes nessa estrutura estão:
+
+- Registro e acompanhamento de agentes conectados.
+- Envio de comandos e recebimento de resultados.
+- Coleta de informações do dispositivo e do ambiente.
+- Comunicação por heartbeat para acompanhar o estado da conexão.
+- Agente executado no navegador da TV.
+- Protótipo de agente nativo Android (APK).
+- Ferramenta de linha de comando para comunicação com o agente nativo.
+
+**Importante:** essa estrutura ainda está em desenvolvimento. As capacidades, compatibilidade e estabilidade podem variar entre dispositivos e versões de Android. Não considere o Agent Mode uma substituição completa do ADB neste momento.
+
+#### Visão futura: agente inteligente com IA
+
+A proposta de evolução é permitir que o usuário converse com o dispositivo de maneira mais natural.
+
+Em vez de depender exclusivamente de comandos técnicos, a intenção é desenvolver um agente capaz de interpretar solicitações, entender o contexto do aparelho e executar operações compatíveis com as permissões disponíveis.
+
+Essa experiência ainda está em desenvolvimento. Não é apresentada como uma funcionalidade pronta ou garantida nesta versão.
+
+---
 
 ## Requisitos
-- Node.js 20+
-- Para o agente: só o navegador da box conseguindo abrir a página do servidor na LAN.
-- Para ADB (opcional): Android SDK Platform Tools (`adb`) no PATH.
 
-## Iniciar
+Antes de começar, tenha instalado:
+
+- **Node.js 20 ou superior**
+- **npm**, normalmente instalado junto com o Node.js
+- **Git**, caso vá clonar o repositório
+
+Para utilizar o módulo ADB:
+
+- Android SDK Platform Tools.
+- Executável `adb` disponível no `PATH` do sistema.
+- Depuração ADB habilitada e autorização concedida no dispositivo.
+
+Para testar recursos de agentes:
+
+- Computador e TV Box acessíveis pela mesma rede local.
+- Navegador compatível na TV, para o agente web.
+- Para o protótipo nativo, instalação do APK e permissões necessárias no Android.
+
+---
+
+## Instalação
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/vitoralvesdev/android-network.git
+```
+
+### 2. Entre na pasta
+
+```bash
+cd android-network
+```
+
+### 3. Instale as dependências
+
 ```bash
 npm install
+```
+
+### 4. Inicie o servidor em desenvolvimento
+
+```bash
 npm run dev
 ```
-- Painel de agentes: <http://localhost:3000/>
-- Descoberta e terminal ADB: <http://localhost:3000/discovery>
-- Página que roda na box: <http://localhost:3000/agent>
-- Comandos: <http://localhost:3000/commands.html>
-- Configurações: <http://localhost:3000/settings.html>
 
-O servidor escuta em `0.0.0.0:3000` para receber agentes da LAN.
-Use `HOST=127.0.0.1 npm run dev` para voltar ao modo somente local. Na primeira execução é
-necessário permitir o Node.js no firewall do Windows para redes privadas.
+O painel será disponibilizado localmente na porta `3000`.
 
-## O que dá para fazer
-O mapa completo também é servido em `GET /api/capabilities` e aparece na página **Comandos**.
-A página inicial mostra apenas as capacidades do modo agente.
+---
 
-### Agentes (principal)
-- **Conectar uma box**: abra `http://<ip-do-pc>:3000/agent` no navegador da box, informe o token
-  (exibido no painel e salvo em `agent-token.txt`) e mantenha a página aberta.
-- **Ver conexões ativas**: `GET /api/agents` lista IP, modelo, Android, tela, idioma, status
-  online/offline (janela de 20 s) e o último resultado.
-- **Pedir info**: comando `info`; a box responde no próximo heartbeat (5 s).
-- **Ler ambiente**: comando `env` (platform, UA-CH, núcleos, memória, WebGL, rede) para diagnosticar o navegador da box.
-- **Abrir um site na box**: comando `open https://...`.
-- **Remover da lista**: `DELETE /api/agents/:id` (a box volta a se registrar se a página continuar aberta).
-- **Autenticação**: token em `x-agent-token` (header, query ou body) apenas nos endpoints de agente.
+## Executando o projeto
 
-### Agente nativo (APK)
-Instale a partir de `http://<ip-do-pc>:3000/apk` (ou `/tx-agent.apk`) e mantenha o app aberto na box.
-Ele sobe um servidor HTTP na porta **8790** com token próprio exibido na tela:
-- `GET /health` (aberto), `/info`, `/apps`, `/launch?pkg=`, `/open?url=`.
-- `GET /install?url=<apk>` — baixa o APK e abre o instalador do sistema na TV (modo `view`);
-  `&mode=session` usa `PackageInstaller`; `&installer=<pacote>` força um instalador específico.
-- `GET /uninstall?pkg=` — pede a desinstalação na TV.
-- `GET /settings?what=unknown|security|applications|main` — abre a tela de configurações.
-- `GET /result` — resultado da última instalação/desinstalação.
-- `/info` informa `canInstall` (fontes desconhecidas liberadas?), quais telas de Settings existem e
-  quais apps respondem ao MIME de APK — essencial em ROMs de TV sem `com.android.settings`.
-- Tudo exige `x-agent-token`; só `/health` é aberto, e a instalação sempre pede confirmação na TV.
+Depois de iniciar o servidor, acesse pelo navegador:
 
-### CLI no PC (agente nativo)
-`tools/box.mjs` conversa com o agente da box pela rede — é o equivalente aos comandos ADB, sem ADB:
-- `node tools/box.mjs config 192.168.1.12:8790 <token>` — grava host e token em `box.json`.
-- `node tools/box.mjs info` — modelo, Android, `canInstall`, telas de Settings e instaladores.
-- `node tools/box.mjs apps [--system] [--json]` — lista apps.
-- `node tools/box.mjs launch <pacote>` / `open <url>` — abre app ou site na TV.
-- `node tools/box.mjs install <arquivo.apk>` — sobe um servidor temporário no PC, a box baixa o
-  APK e abre o instalador; confirme na TV. `--session` usa o PackageInstaller do ROM.
-- `node tools/box.mjs uninstall <pacote>` / `settings [unknown|security|applications|main]` / `result`.
-- host, porta e token também valem por `BOX_HOST`, `BOX_PORT` e `BOX_TOKEN`; `npm run box -- <comando>` é o atalho.
-- No terminal da página `/discovery` (aba **Terminal**), os mesmos comandos funcionam com o prefixo
-  `agent` (ou `box`): `agent info`, `agent apps`, `agent launch <pacote>`, `agent install <apk>`.
-  Comandos ADB seguem sem prefixo no mesmo campo.
+| Página           | Endereço                              | Descrição                               |
+| ---------------- | ------------------------------------- | --------------------------------------- |
+| Painel principal | `http://localhost:3000`               | Painel inicial e visão das capacidades  |
+| Descoberta       | `http://localhost:3000/discovery`     | Dispositivos encontrados e terminal ADB |
+| Agente web       | `http://localhost:3000/agent`         | Página experimental executada na TV     |
+| Comandos         | `http://localhost:3000/commands.html` | Referência de comandos e capacidades    |
+| Configurações    | `http://localhost:3000/settings.html` | Configurações e dispositivos em cache   |
 
-### Descoberta na rede (auxiliar)
-- Varredura em etapas: hosts conhecidos, `adb devices`, mDNS (Cast, Android TV Remote, AirPlay,
-  RAOP, ADB TLS), SSDP/UPnP, cache ARP e varredura TCP da sub-rede principal.
-- Identificação com nome, modelo, fabricante, MAC e evidências; classificação em Android TV,
-  Android (celular/tablet), Apple, roteador ou desconhecido.
-- Aparelhos ligados por **cabo USB** aparecem na descoberta (o IP de Wi‑Fi é obtido via
-  `adb shell ip -4 -o addr` quando autorizado) e o serial fica disponível como alvo dos comandos.
-- Enriquecimento por AirPlay `/info`, Google Cast `eureka_info`, descrição UPnP e DNS reverso.
-- Sonda de TTL para hosts sem portas abertas e Wake-on-LAN para hosts conhecidos.
+### Acesso pela rede local
 
-### ADB (opcional)
-O alvo pode ser um IP (`192.168.1.14`), `ip:porta` ou o **serial USB** exibido por `adb devices`
-(ex.: `RQ8R205WKDW`).
-- `list <ip-ou-serial>` — identifica e coleta fabricante, modelo, Android, SDK, RAM, armazenamento,
-  uptime e bateria.
-- `apps <alvo>` — lista apps de usuário e de sistema.
-- `install <alvo> <apk>` — instala/atualiza um APK do PC.
-- `uninstall <alvo> <pacote> confirmar` — remove um app (tenta `pm uninstall --user 0` se necessário).
-- `screen <alvo>` — captura a tela e mostra a prévia em `/discovery`.
-- `push <alvo> <arquivo> [destino]` — envia arquivo para a box.
-- `reboot <alvo> confirmar` — reinicia a box.
-- `pair <ip:porta> <código>` — pareia a depuração sem fio do Android 11+.
-- `connect <ip[:porta]>` / `disconnect <ip[:porta]>` — gerencia a sessão.
-- `abort` / `help`.
-- Keep-alive testa hosts ADB conhecidos, reconecta e pode acordar a box via Wake-on-LAN.
+Por padrão, o servidor escuta em `0.0.0.0:3000`, permitindo conexões de outros dispositivos da rede.
 
-O painel `/discovery` tem uma área **Apps e arquivos** com escolha de APK/arquivo pelo navegador
-(`POST /api/transfer?action=install|push`), captura de tela e reinício com confirmação.
-Essas operações exigem ADB habilitado; a página `/agent` não tem permissão do navegador para
-instalar ou remover apps. Para instalar/desinstalar sem ADB, use o agente nativo (APK) na porta 8790.
+Para abrir uma página na TV Box, substitua o endereço abaixo pelo IP local do computador:
 
-### Integração entre agentes, descoberta e cache
-- `GET /api/devices` marca cada grupo com o agente correspondente (`agent.online`), inclui
-  agentes que a varredura não encontrou e devolve `usbAdb` com os aparelhos conectados por USB.
-- O painel de descoberta mostra um selo “agente online/offline” no dispositivo.
-- A página de configurações mistura hosts conhecidos, agentes e aparelhos ADB em
-  **Dispositivos em cache**.
-
-### Sistema
-- `GET /api/logs` — SSE com a atividade do servidor.
-- `GET/POST /api/config`, `POST /api/config/reset` — ajustes da descoberta e keep-alive.
-- `GET /api/capabilities` — este mapa em JSON.
-
-## Arquitetura
+```text
+http://IP-DO-COMPUTADOR:3000
 ```
+
+Exemplo:
+
+```text
+http://192.168.1.10:3000
+```
+
+Na primeira execução, o Windows pode solicitar autorização para o Node.js no Firewall. Permita o acesso em redes privadas para que os dispositivos da LAN consigam alcançar o servidor.
+
+Para executar somente no próprio computador:
+
+```bash
+HOST=127.0.0.1 npm run dev
+```
+
+No PowerShell do Windows:
+
+```powershell
+$env:HOST="127.0.0.1"; npm run dev
+```
+
+---
+
+## Conectando um dispositivo com ADB
+
+O ADB é a forma de conexão mais consolidada do projeto.
+
+Existem duas possibilidades principais: conexão USB ou conexão pela rede Wi-Fi/Ethernet.
+
+### Opção 1 — USB
+
+1. Ative as opções do desenvolvedor na TV Box.
+2. Habilite a depuração USB.
+3. Conecte o aparelho ao computador por USB.
+4. Aceite a autorização de depuração exibida na TV.
+5. No terminal, execute:
+
+```bash
+adb devices
+```
+
+O serial do aparelho aparecerá na lista. Esse serial pode ser utilizado como alvo dos comandos do projeto.
+
+### Opção 2 — ADB pela rede
+
+**Android 11 ou superior:**
+
+1. Ative as opções do desenvolvedor.
+2. Habilite a opção **Depuração sem fio**.
+3. Consulte o endereço e a porta de pareamento exibidos pelo Android.
+4. Execute o pareamento:
+
+```text
+pair <ip:porta-de-pareamento> <código>
+```
+
+5. Depois, conecte usando o endereço e a porta de conexão:
+
+```text
+connect <ip:porta-de-conexão>
+```
+
+**Android 10 ou inferior:**
+
+1. Habilite a depuração ADB pela rede, quando disponível na firmware.
+2. Execute:
+
+```bash
+adb connect 192.168.1.20:5555
+```
+
+3. Aceite a autorização de depuração exibida na TV, se solicitada.
+
+A disponibilidade dessas opções depende da versão do Android e da firmware instalada pelo fabricante.
+
+---
+
+## Comandos disponíveis no ADB
+
+Os comandos podem ser executados pelo terminal da interface `/discovery` ou pelo terminal do sistema, conforme indicado.
+
+| Comando                               | Descrição                           |
+| ------------------------------------- | ----------------------------------- |
+| `list <ip-ou-serial>`                 | Consulta informações do dispositivo |
+| `apps <alvo>`                         | Lista aplicativos instalados        |
+| `install <alvo> <apk>`                | Instala ou atualiza um APK          |
+| `uninstall <alvo> <pacote> confirmar` | Desinstala um aplicativo            |
+| `screen <alvo>`                       | Captura a tela da TV                |
+| `push <alvo> <arquivo> [destino]`     | Envia um arquivo para o dispositivo |
+| `reboot <alvo> confirmar`             | Reinicia o dispositivo              |
+| `pair <ip:porta> <código>`            | Pareia a depuração sem fio          |
+| `connect <ip[:porta]>`                | Conecta um dispositivo pela rede    |
+| `disconnect <ip[:porta]>`             | Encerra uma conexão                 |
+| `abort`                               | Interrompe uma operação compatível  |
+| `help`                                | Exibe a ajuda de comandos           |
+
+Exemplo:
+
+```bash
+list 192.168.1.20
+```
+
+Listar aplicativos:
+
+```bash
+apps 192.168.1.20
+```
+
+Instalar um APK:
+
+```bash
+install 192.168.1.20 ./meu-aplicativo.apk
+```
+
+Desinstalar um aplicativo:
+
+```bash
+uninstall 192.168.1.20 com.exemplo.aplicativo confirmar
+```
+
+O alvo pode ser um endereço IP, um endereço com porta ou o serial USB exibido pelo `adb devices`.
+
+### Área de aplicativos e arquivos
+
+A interface `/discovery` também disponibiliza uma área para selecionar arquivos pelo navegador e executar operações de instalação, transferência, captura de tela e reinicialização.
+
+As operações que dependem de ADB exigem que o dispositivo esteja conectado e autorizado.
+
+---
+
+## Agent Mode — em desenvolvimento
+
+Esta seção documenta a estrutura experimental existente. Ela não representa uma promessa de compatibilidade ou estabilidade para todos os aparelhos.
+
+### Agente web
+
+O protótipo web é executado no navegador da TV Box.
+
+Para testar:
+
+1. Inicie o servidor no computador.
+2. Descubra o IP local do computador.
+3. Abra o navegador da TV.
+4. Acesse:
+
+```text
+http://IP-DO-COMPUTADOR:3000/agent
+```
+
+5. Informe o token apresentado pelo painel ou armazenado em `agent-token.txt`.
+6. Mantenha a página aberta durante o teste.
+
+A estrutura atual contempla registro, heartbeat, consulta de informações, leitura de dados do ambiente do navegador e abertura de URLs.
+
+**Limitação:** o navegador Android não possui permissões para instalar ou desinstalar aplicativos diretamente. Para essas operações sem ADB, existe um protótipo nativo Android.
+
+### Agente nativo Android (APK)
+
+O projeto também possui um protótipo de agente nativo.
+
+O APK pode ser acessado pelo servidor em:
+
+```text
+http://IP-DO-COMPUTADOR:3000/apk
+```
+
+ou:
+
+```text
+http://IP-DO-COMPUTADOR:3000/tx-agent.apk
+```
+
+O aplicativo disponibiliza um servidor HTTP na porta `8790`, com token próprio exibido na interface do agente.
+
+A estrutura atual contempla endpoints para:
+
+| Endpoint              | Operação                                |
+| --------------------- | --------------------------------------- |
+| `GET /health`         | Verifica se o agente está respondendo   |
+| `GET /info`           | Consulta informações do aparelho        |
+| `GET /apps`           | Lista aplicativos                       |
+| `GET /launch?pkg=`    | Abre um aplicativo                      |
+| `GET /open?url=`      | Abre uma URL                            |
+| `GET /install?url=`   | Baixa um APK e solicita sua instalação  |
+| `GET /uninstall?pkg=` | Solicita a desinstalação                |
+| `GET /settings?what=` | Abre uma tela de configurações          |
+| `GET /result`         | Consulta o resultado da última operação |
+
+As operações protegidas exigem o token do agente no header `x-agent-token`. O endpoint `/health` é aberto.
+
+A instalação e a desinstalação dependem das permissões e dos recursos da firmware. A instalação solicita confirmação na própria TV.
+
+### CLI do agente nativo
+
+Existe também uma ferramenta de terminal para testar a comunicação com o agente nativo:
+
+```bash
+node tools/box.mjs config 192.168.1.20:8790 <token>
+```
+
+Consultar informações:
+
+```bash
+node tools/box.mjs info
+```
+
+Listar aplicativos:
+
+```bash
+node tools/box.mjs apps
+```
+
+Abrir aplicativo:
+
+```bash
+node tools/box.mjs launch com.exemplo.aplicativo
+```
+
+Instalar APK:
+
+```bash
+node tools/box.mjs install ./meu-aplicativo.apk
+```
+
+Desinstalar aplicativo:
+
+```bash
+node tools/box.mjs uninstall com.exemplo.aplicativo
+```
+
+Também é possível utilizar as variáveis `BOX_HOST`, `BOX_PORT` e `BOX_TOKEN`, ou o atalho:
+
+```bash
+npm run box -- <comando>
+```
+
+No terminal da página `/discovery`, os comandos do agente podem ser executados com o prefixo `agent` ou `box`, por exemplo:
+
+```text
+agent info
+agent apps
+agent launch com.exemplo.aplicativo
+```
+
+---
+
+## Descoberta de dispositivos
+
+A descoberta procura identificar aparelhos disponíveis na rede local usando diferentes protocolos e sinais.
+
+O processo considera:
+
+- Hosts já conhecidos.
+- Dispositivos listados pelo ADB.
+- Serviços mDNS.
+- SSDP / UPnP.
+- Serviços Cast, Android TV Remote e AirPlay.
+- Cache ARP.
+- Varredura TCP da sub-rede principal.
+- Informações obtidas por HTTP, DNS reverso e TTL, quando disponíveis.
+
+Os resultados são agrupados e classificados com base nas evidências encontradas.
+
+### Integração com agentes e cache
+
+A API de dispositivos pode combinar informações da descoberta, dos agentes e dos aparelhos ADB conectados por USB.
+
+A interface também pode indicar se existe um agente online ou offline associado ao dispositivo.
+
+Esses recursos fazem parte da estrutura de integração em desenvolvimento.
+
+---
+
+## Estrutura do projeto
+
+A organização é modular: servidor, funcionalidades centrais, agentes, descoberta, ADB e interface web ficam separados.
+
+```text
 src/
-  server.ts                 bootstrap: Express, middleware, montagem das rotas
-  capabilities.ts           mapa de capacidades (fonte do /api/capabilities)
-  core/
-    settings.ts             porta, host, versão, diretório de dados, token
-    log.ts                  barramento de logs (SSE)
-    routes.ts               /api/logs, /api/capabilities, /api/config, /api/hosts
-    security.ts             isLocalRequest (loopback + IPs da própria máquina)
-    config-store.ts         leitura/gravação de scan-config.json
-    host-cache.ts           cache de hosts conhecidos
-    network.ts              interfaces, ARP, DNS, TTL, portas, sub-rede
-    http.ts / xml.ts / text.ts / time.ts
-    wol.ts                  Wake-on-LAN
-  agents/
-    registry.ts             registro em memória, janela online, cleanup
-    security.ts             apiAccess (token para agente, localhost para o resto)
-    routes.ts               /api/agent/*, /api/agents
-  discovery/
-    scan.ts                 orquestra a varredura e mantém o estado
-    identify.ts             agrupa e classifica evidências
-    models.ts / ports.ts / types.ts
-    protocols/              mdns, ssdp, airplay, cast
-    routes.ts               /api/devices, /api/scan/status, /api/scan/start
-  adb/
-    client.ts               execução do adb, endpoints e resolução
-    ops.ts                  apps, install, uninstall, screen, push, reboot
-    keepalive.ts            reconexão periódica
-    routes.ts               POST /api/command, /api/transfer, /api/captures
+├── server.ts                 # Inicialização do Express e montagem das rotas
+├── capabilities.ts           # Mapa de capacidades da aplicação
+│
+├── core/
+│   ├── settings.ts            # Configurações gerais, porta, host e diretórios
+│   ├── log.ts                 # Barramento de logs e eventos SSE
+│   ├── routes.ts              # Rotas centrais de API
+│   ├── security.ts            # Verificação de requisições locais
+│   ├── config-store.ts        # Persistência das configurações
+│   ├── host-cache.ts          # Cache de dispositivos conhecidos
+│   ├── network.ts             # Interfaces, ARP, DNS, TTL e portas
+│   ├── wol.ts                 # Wake-on-LAN
+│   └── http.ts / xml.ts /
+│       text.ts / time.ts      # Utilitários
+│
+├── agents/
+│   ├── registry.ts            # Registro e estado dos agentes
+│   ├── security.ts            # Autenticação dos agentes
+│   └── routes.ts              # Endpoints de comunicação dos agentes
+│
+├── discovery/
+│   ├── scan.ts                # Orquestração da descoberta
+│   ├── identify.ts            # Identificação e classificação
+│   ├── models.ts
+│   ├── ports.ts
+│   ├── types.ts
+│   ├── protocols/             # mDNS, SSDP, AirPlay e Cast
+│   └── routes.ts              # Endpoints da descoberta
+│
+└── adb/
+    ├── client.ts              # Cliente ADB e resolução de alvos
+    ├── ops.ts                 # Operações de manutenção
+    ├── keepalive.ts           # Reconexão e monitoramento
+    └── routes.ts              # Comandos, transferências e capturas
+
 public/
-  index.html                painel de agentes + mapa de capacidades
-  discovery.html            dispositivos + terminal ADB
-  agent.html                página que roda na box
-  commands.html             referência de comandos
-  settings.html             configurações da descoberta
-  js/common.js              utilidades compartilhadas
-  js/capabilities.js        mapa de capacidades (home e Comandos)
-  js/agents.js              lógica do painel de agentes
-  js/discovery.js           lógica da descoberta/terminal
+├── index.html                 # Painel principal
+├── discovery.html             # Descoberta e terminal
+├── agent.html                 # Interface do agente web
+├── commands.html              # Referência de comandos
+├── settings.html              # Configurações
+└── js/
+    ├── common.js
+    ├── capabilities.js
+    ├── agents.js
+    └── discovery.js
+
+tools/
+└── box.mjs                    # CLI do agente nativo
 ```
 
-### Regras de acesso
-- Todo `/api/*` é restrito ao localhost, **exceto** os endpoints de agente.
-- `/api/agent/register`, `/api/agent/heartbeat`, `/api/agent/result` e
-  `POST /api/agents/:id/command` exigem token válido, inclusive localmente.
-- `GET /api/agents` só devolve o token quando a requisição é local.
-- O token nunca é necessário na página `/agent` da box além do próprio formulário.
+A estrutura acima representa os módulos documentados. Arquivos adicionais podem existir no repositório.
 
-## Limitações
-Não existe forma universal de identificar toda TV Box só pelo IP. A descoberta vê serviços
-expostos (Cast, Android TV Remote, ADB, UPnP); aparelhos desligados, em outra sub-rede ou com
-ADB desabilitado podem não aparecer.
+---
 
-ADB sempre exige autorização local na primeira conexão:
-- **Cabo USB**: ative a depuração USB, aceite o aviso no aparelho e use o serial como alvo — não
-  precisa de rede nem de `connect`.
-- **Android 11+**: ativar *Opções do desenvolvedor → Depuração sem fio*, usar
-  `pair <ip:porta-de-pareamento> <código>` e depois `connect <ip:porta-de-conexão>`.
-- **Android 10 ou menor**: ativar *Depuração USB/ADB pela rede*, usar `connect <ip>:5555`
-  e aceitar o aviso "Permitir depuração USB" na tela.
+## Rede e segurança
 
-Se a firmware bloquear as opções de desenvolvedor, é necessário menu de engenharia/vendor.
-Para apenas listar e identificar boxes sem ADB, use o modo agente.
+O servidor utiliza a porta `3000` por padrão e escuta em `0.0.0.0` para permitir comunicação pela rede local.
+
+As regras de acesso atuais são:
+
+- As rotas `/api/*` são restritas a requisições locais, com exceção dos endpoints destinados aos agentes.
+- Registro, heartbeat, envio de resultados e envio de comandos aos agentes exigem token válido.
+- O token dos agentes é enviado pelo header `x-agent-token` (também há suporte a query ou body nos endpoints previstos).
+- A consulta de agentes só disponibiliza o token quando a requisição é local.
+- O agente nativo utiliza seu próprio token.
+- O endpoint `/health` do agente nativo não exige autenticação.
+
+**Atenção:** não exponha o servidor diretamente à internet. A configuração foi pensada para uso local em uma rede confiável. Tokens e operações de manutenção devem ser tratados como informações sensíveis.
+
+---
+
+## Limitações conhecidas
+
+- Não existe um método universal para identificar toda TV Box apenas pelo endereço IP.
+- Dispositivos desligados, em outra sub-rede ou sem serviços de descoberta ativos podem não aparecer.
+- A descoberta depende dos protocolos e serviços disponibilizados pela firmware.
+- O ADB exige autorização no aparelho antes de permitir operações.
+- Algumas fabricantes bloqueiam ou modificam opções de desenvolvedor e depuração.
+- A instalação e a remoção de aplicativos pelo agente nativo dependem das permissões disponíveis no Android e na firmware.
+- O agente web não tem permissão para instalar ou remover aplicativos diretamente.
+- Os recursos relacionados aos agentes ainda são experimentais e podem mudar durante o desenvolvimento.
+
+Se a firmware bloquear as opções de desenvolvedor, pode ser necessário utilizar um menu de engenharia ou ferramentas específicas do fabricante.
+
+---
+
+## Tecnologias
+
+- **Node.js**
+- **TypeScript**
+- **Express**
+- **Android Debug Bridge (ADB)**
+- **HTML, CSS e JavaScript**
+- **Protocolos de descoberta de rede:** mDNS, SSDP / UPnP e outros
+
+---
+
+## Contribuindo
+
+Contribuições, testes em diferentes modelos de TV Box e relatos de compatibilidade são bem-vindos.
+
+Para contribuir:
+
+1. Faça um fork do repositório.
+2. Crie uma branch para sua alteração.
+3. Implemente e teste a mudança.
+4. Envie um Pull Request explicando o que foi alterado e como testar.
+
+Ao reportar um problema, inclua, sempre que possível:
+
+- Modelo da TV Box.
+- Versão do Android e firmware.
+- Tipo de conexão (Wi-Fi, Ethernet ou USB).
+- Método utilizado (ADB, agente web ou agente nativo).
+- Logs e mensagens de erro relevantes.
+
+---
+
+## Licença
+
+Consulte o arquivo `LICENSE` do repositório para informações sobre os termos de uso e distribuição.
